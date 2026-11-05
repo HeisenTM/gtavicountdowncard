@@ -80,7 +80,7 @@ input.bad{border-color:#c0392b}
     <div>
       <span class="lbl">Image size <span id="dimv" style="font-weight:400">1600 × 900 px</span></span>
       <div class="styles" id="sizes">
-        <button data-z="default" aria-pressed="true">Default</button>
+        <button data-z="big" aria-pressed="true">Big</button>
         <button data-z="medium" aria-pressed="false">Medium</button>
         <button data-z="small" aria-pressed="false">Small</button>
       </div>
@@ -225,8 +225,8 @@ document.getElementById('styles').addEventListener('click',e=>{
 });
 
 const say = t => { status.textContent=t; };
-const SIZES = {default:[1600,900], medium:[720,405], small:[480,270]};
-let size = 'default';
+const SIZES = {big:[1600,900], medium:[800,450], small:[400,225]};
+let size = 'big';
 document.getElementById('sizes').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; size=b.dataset.z;
   document.querySelectorAll('#sizes button').forEach(x=>x.setAttribute('aria-pressed',x===b));
