@@ -30,6 +30,7 @@ canvas{display:block;width:100%;height:auto}
 input[type=range]{width:100%;accent-color:var(--accent)}
 input[type=range]:disabled{opacity:.4}
 .btn:disabled{opacity:.45;cursor:default}
+#sizes button{padding:0 16px}
 .hint{color:var(--muted);font-size:12.5px;margin:12px 0 0}
 label,.lbl{display:block;font-weight:500;font-size:13px;color:var(--muted);margin-bottom:6px}
 input[type=text]{width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit}
@@ -75,6 +76,15 @@ input.bad{border-color:#c0392b}
         <button data-s="light" aria-pressed="false"><span class="sw" style="background:#f4f4f2"></span>Light</button>
         <button data-s="color" aria-pressed="false"><span class="sw" style="background:linear-gradient(135deg,#6a3fb0,#e8708f 60%,#f0a35e)"></span>Colour</button>
       </div>
+    </div>
+    <div>
+      <span class="lbl">Image size <span id="dimv" style="font-weight:400">1600 × 900 px</span></span>
+      <div class="styles" id="sizes">
+        <button data-z="default" aria-pressed="true">Default</button>
+        <button data-z="medium" aria-pressed="false">Medium</button>
+        <button data-z="small" aria-pressed="false">Small</button>
+      </div>
+      <p class="hint" style="margin-top:8px">Big images fill the Discord chat, so pick Medium or Small to keep it compact.</p>
     </div>
   </div>
 
@@ -215,7 +225,21 @@ document.getElementById('styles').addEventListener('click',e=>{
 });
 
 const say = t => { status.textContent=t; };
-const blob = () => new Promise(r=>c.toBlob(r,'image/png'));
+const SIZES = {default:[1600,900], medium:[720,405], small:[480,270]};
+let size = 'default';
+document.getElementById('sizes').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return; size=b.dataset.z;
+  document.querySelectorAll('#sizes button').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  const [w,h]=SIZES[size]; document.getElementById('dimv').textContent=w+' × '+h+' px';
+});
+const blob = () => new Promise(r=>{
+  const [w,h]=SIZES[size];
+  if(w===c.width) return c.toBlob(r,'image/png');
+  let src=c; // step down by halves, then finish at the exact size, so text stays crisp
+  while(src.width/2 > w){ const t=document.createElement('canvas'); t.width=Math.round(src.width/2); t.height=Math.round(src.height/2); const x=t.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(src,0,0,t.width,t.height); src=t; }
+  const o=document.createElement('canvas'); o.width=w; o.height=h; const x=o.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(src,0,0,w,h);
+  o.toBlob(r,'image/png');
+});
 function download(b){ const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='gta6-countdown.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
 document.getElementById('dl').onclick = async()=>{ draw(); download(await blob()); say('Downloaded.'); };
 document.getElementById('copy').onclick = async()=>{
