@@ -16,7 +16,8 @@ body{margin:0;background:var(--bg);color:var(--text);font:400 15px/1.5 Inter,sys
 main{max-width:920px;margin:0 auto;padding:32px 20px 48px}
 h1{font:600 22px/1.2 "Space Grotesk",Inter,system-ui,sans-serif;margin:0 0 4px}
 .sub{color:var(--muted);margin:0 0 24px}
-.preview{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.stick{position:sticky;top:0;z-index:10;background:var(--bg);padding:12px 0;padding-top:calc(env(safe-area-inset-top,0px) + 12px);margin-top:-12px}
+.preview{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:var(--panel);width:min(100%,calc(46vh * 1.7778));margin:0 auto}
 canvas{display:block;width:100%;height:auto}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;margin-top:20px;align-items:end}
 .tzrow{grid-column:1/-1}
@@ -53,7 +54,7 @@ input.bad{border-color:#c0392b}
   <h1>GTA VI countdown card</h1>
   <p class="sub">Pick your timezone and style, then copy or download the card.</p>
 
-  <div class="preview"><canvas id="c" width="1600" height="900" aria-label="Countdown card preview"></canvas></div>
+  <div class="stick"><div class="preview"><canvas id="c" width="1600" height="900" aria-label="Countdown card preview"></canvas></div></div>
 
   <div class="controls">
     <div class="tzrow">
