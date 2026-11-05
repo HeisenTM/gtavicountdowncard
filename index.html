@@ -21,6 +21,9 @@ h1{font:600 22px/1.2 "Space Grotesk",Inter,system-ui,sans-serif;margin:0 0 4px}
 canvas{display:block;width:100%;height:auto}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;margin-top:20px;align-items:end}
 .tzrow{grid-column:1/-1}
+select{width:100%;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit}
+select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.namerow{display:grid;grid-template-columns:1fr 1.5fr;gap:10px}
 #modes button{padding:0 14px}
 .bgbox{margin-top:20px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
 .bghead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -46,7 +49,7 @@ input.bad{border-color:#c0392b}
 .btn.ghost{background:transparent;color:var(--text);border-color:var(--line)}
 .status{min-height:22px;margin:12px 0 0;color:var(--muted);font-size:13px}
 .note{color:var(--muted);font-size:12.5px;margin-top:8px}
-@media(max-width:640px){.controls,.sliders{grid-template-columns:1fr}.styles button{flex:1;justify-content:center}.btn{flex:1}}
+@media(max-width:640px){.controls,.sliders,.namerow{grid-template-columns:1fr}.styles button{flex:1;justify-content:center}.btn{flex:1}}
 </style>
 </head>
 <body>
@@ -61,6 +64,19 @@ input.bad{border-color:#c0392b}
       <label for="tz">Timezone <span style="font-weight:400">(click to browse, or type a city)</span></label>
       <input id="tz" type="text" list="tzlist" autocomplete="off" spellcheck="false">
       <datalist id="tzlist"></datalist>
+    </div>
+    <div class="tzrow">
+      <label for="nm">Your name <span style="font-weight:400">(optional) and the line shown under the countdown</span></label>
+      <div class="namerow">
+        <input id="nm" type="text" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Your name or handle">
+        <select id="ln" aria-label="Line under the countdown">
+          <option value="{n} will be playing this on day one">will be playing this on day one</option>
+          <option value="{n} is not sleeping on release night">is not sleeping on release night</option>
+          <option value="{n} has cleared their schedule">has cleared their schedule</option>
+          <option value="{n} will see you in Vice City">will see you in Vice City</option>
+          <option value="{n} is already in Vice City (mentally)">is already in Vice City (mentally)</option>
+        </select>
+      </div>
     </div>
     <div>
       <span class="lbl">Countdown</span>
@@ -132,7 +148,7 @@ const STYLES = {
   color:{logo:'color',bg:['#1a1030','#0f0a1d'],glow:[['rgba(255,70,160,.20)',0.12,0.05],['rgba(255,160,70,.15)',0.92,1]],text:'#fbf8ff',muted:'#a99dc0',box:'rgba(255,255,255,.07)',line:'rgba(255,255,255,.14)'}
 };
 
-let tz = DEFAULT_TZ, style = 'dark', bgImg = null, bgCanvas = null;
+let tz = DEFAULT_TZ, style = 'dark', bgImg = null, bgCanvas = null, nameText = '';
 const imgs = {};
 const loads = Object.entries(LOGOS).map(([k,src])=>new Promise(r=>{const i=new Image();i.onload=r;i.src=src;imgs[k]=i;}));
 
@@ -191,6 +207,7 @@ function draw(){
     ctx.fillStyle=S.text; ctx.beginPath(); ctx.arc(px+30,py+ph/2,7,0,Math.PI*2); ctx.fill();
     ctx.fillText(tag,px+52,py+ph/2+1); ctx.textBaseline='alphabetic'; }
 
+
   const bw=290, bh=220, gap=26, x0=(W-(4*bw+3*gap))/2, y0=430;
   ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   if(out){
@@ -207,7 +224,8 @@ function draw(){
   ctx.fillStyle=S.text; ctx.font='500 34px Inter, system-ui, sans-serif';
   ctx.fillText(when+'  ·  '+cityName(tz)+' ('+offLabel(tz)+')',W/2,764);
   ctx.fillStyle=mut; ctx.font='400 26px Inter, system-ui, sans-serif';
-  ctx.fillText('PlayStation 5  ·  Xbox Series X|S',W/2,816);
+  if(nameText){ ctx.fillStyle=S.text; ctx.font='500 34px Inter, system-ui, sans-serif'; }
+  ctx.fillText(nameText ? document.getElementById('ln').value.replace('{n}',nameText) : 'PlayStation 5  ·  Xbox Series X|S',W/2,820);
 }
 
 const input = document.getElementById('tz'), list = document.getElementById('tzlist'), status = document.getElementById('status');
@@ -249,6 +267,8 @@ document.getElementById('copy').onclick = async()=>{
   catch(e){ say('Your browser blocked copying here, so use Download instead.'); }
 };
 
+document.getElementById('nm').addEventListener('input',e=>{ nameText=e.target.value.trim(); draw(); });
+document.getElementById('ln').addEventListener('change',draw);
 document.getElementById('modes').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; mode=b.dataset.m;
   document.querySelectorAll('#modes button').forEach(x=>x.setAttribute('aria-pressed',x===b));
