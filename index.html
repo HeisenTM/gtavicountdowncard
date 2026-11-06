@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GTA VI Countdown Card</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
 <style>
 :root{--bg:#f6f6f4;--panel:#fff;--text:#16161a;--muted:#6b6b76;--line:#e2e2de;--accent:#16161a;--on-accent:#fff;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -35,6 +35,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 input[type=range]:disabled{opacity:.4}
 .btn:disabled{opacity:.45;cursor:default}
 #sizes button{padding:0 16px}
+#opts{flex-wrap:wrap}
+#opts button{padding:0 14px}
 .hint{color:var(--muted);font-size:12.5px;margin:12px 0 0}
 label,.lbl{display:block;font-weight:500;font-size:13px;color:var(--muted);margin-bottom:6px}
 input[type=text]{width:100%;height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit}
@@ -103,6 +105,14 @@ input.bad{border-color:#c0392b}
       </div>
       <p class="hint" style="margin-top:8px">Big images fill the Discord chat, so pick Medium or Small to keep it compact.</p>
     </div>
+    <div>
+      <span class="lbl">Extras</span>
+      <div class="styles" id="opts">
+        <button data-o="bold" aria-pressed="false">Bold text</button>
+        <button data-o="nobox" aria-pressed="false">Remove boxes</button>
+        <button data-o="prog" aria-pressed="false">Progress bar</button>
+      </div>
+    </div>
   </div>
 
   <div class="bgbox">
@@ -126,7 +136,7 @@ input.bad{border-color:#c0392b}
     <button class="btn ghost" id="dl">Download PNG</button>
   </div>
   <p class="status" id="status" role="status" aria-live="polite"></p>
-  <p class="note">Launch (19 Nov) and PS5 preload (10 Nov) count down to 12:00 AM in your chosen timezone. Xbox preload opens at one moment worldwide, 12:00 AM GMT on 10 Nov, shown here in your timezone. Rockstar has only confirmed the preload time, so the launch time is based on store listings. The default is New Zealand, which gets midnight first.</p>
+  <p class="note">Launch (19 Nov) and PS5 preload (10 Nov) count down to 12:00 AM in your chosen timezone. Xbox preload opens at one moment worldwide, 12:00 AM GMT on 10 Nov, shown here in your timezone. Rockstar has only confirmed the preload time, so the launch time is based on store listings. The default is New Zealand, which gets midnight first. The progress bar counts from 4 Feb 2022, the day Rockstar announced it was developing the next GTA, to the date you selected.</p>
 </main>
 
 <script>
@@ -149,6 +159,7 @@ const STYLES = {
 };
 
 let tz = DEFAULT_TZ, style = 'dark', bgImg = null, bgCanvas = null, nameText = '';
+const opts = {bold:false, nobox:false, prog:false};
 const imgs = {};
 const loads = Object.entries(LOGOS).map(([k,src])=>new Promise(r=>{const i=new Image();i.onload=r;i.src=src;imgs[k]=i;}));
 
@@ -183,49 +194,76 @@ const SANS = '"Space Grotesk", Inter, system-ui, sans-serif';
 function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
 
 function draw(){
-  const S = STYLES[style], W=c.width, H=c.height;
+  const S = STYLES[style], W=c.width, H=c.height, M=80;
   const boxFill = bgCanvas ? (style==='light' ? 'rgba(255,255,255,.5)' : 'rgba(255,255,255,.12)') : S.box;
   const g = ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,S.bg[0]); g.addColorStop(1,S.bg[1]);
   ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
   if(bgCanvas) ctx.drawImage(bgCanvas,0,0);
   else if(S.glow) S.glow.forEach(([col,px,py])=>{const r=ctx.createRadialGradient(W*px,H*py,0,W*px,H*py,W*0.6);r.addColorStop(0,col);r.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=r;ctx.fillRect(0,0,W,H);});
 
-  const img = imgs[S.logo];
-  if(img && img.complete){ const lh=290, lw=lh*img.naturalWidth/img.naturalHeight; ctx.drawImage(img,W/2-lw*(LOGO_CX[S.logo]||.5),64,lw,lh); }
-
-  const target = targetUtc(tz);
-  let diff = Math.max(0, target - Date.now());
-  const out = Date.now() >= target;
-  const s = Math.floor(diff/1000);
+  const mut = bgCanvas ? S.text : S.muted;
+  const now = Date.now(), target = targetUtc(tz), out = now >= target;
+  const s = Math.floor(Math.max(0, target-now)/1000);
   const vals = [Math.floor(s/86400), Math.floor(s%86400/3600), Math.floor(s%3600/60), s%60];
   const labels = ['Days','Hours','Minutes','Seconds'];
-  const mut = bgCanvas ? S.text : S.muted;
-  { const tag = {launch:'GTA VI launch', ps5:'PS5 preload', xbox:'Xbox preload'}[mode];
-    ctx.font='500 30px Inter, system-ui, sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
-    const pw = ctx.measureText(tag).width + 86, px = 72, py = 64, ph = 64;
-    rr(px,py,pw,ph,ph/2); ctx.fillStyle=boxFill; ctx.fill(); ctx.strokeStyle=S.line; ctx.lineWidth=2; ctx.stroke();
-    ctx.fillStyle=S.text; ctx.beginPath(); ctx.arc(px+30,py+ph/2,7,0,Math.PI*2); ctx.fill();
-    ctx.fillText(tag,px+52,py+ph/2+1); ctx.textBaseline='alphabetic'; }
+  const UI = ' Inter, system-ui, sans-serif';
 
+  // top row: badge on the left, logo in the right corner (their top edges both sit on the top margin)
+  const rowH = 112, img = imgs[S.logo];
+  if(img && img.complete){ const lw = rowH*img.naturalWidth/img.naturalHeight; ctx.drawImage(img, W-M-lw, M, lw, rowH); }
+  { const tag = {launch:'GTA VI Launch', ps5:'PS5 Preload', xbox:'Xbox Preload'}[mode];
+    ctx.font='500 30px'+UI; ctx.textAlign='left'; ctx.textBaseline='middle';
+    const pw = ctx.measureText(tag).width + 86, ph = 64, px = M, py = M, ox = opts.nobox ? -22 : 0, cy = opts.nobox ? M+12 : M+ph/2;
+    if(!opts.nobox){ rr(px,py,pw,ph,ph/2); ctx.fillStyle=boxFill; ctx.fill(); ctx.strokeStyle=S.line; ctx.lineWidth=2; ctx.stroke(); }
+    ctx.fillStyle=S.text; ctx.beginPath(); ctx.arc(px+30+ox,cy,7,0,Math.PI*2); ctx.fill();
+    ctx.fillText(tag,px+52+ox,cy+1); ctx.textBaseline='alphabetic'; }
 
-  const bw=290, bh=220, gap=26, x0=(W-(4*bw+3*gap))/2, y0=430;
+  // countdown: the biggest thing on the card
+  const gap = 24, cw = (W-2*M-3*gap)/4, y0 = opts.prog ? 248 : 268, bh = opts.prog ? 320 : 340;
   ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   if(out){
-    ctx.fillStyle=S.text; ctx.font='600 120px '+SANS; ctx.fillText(MODES[mode].done,W/2,y0+140);
+    const sz = opts.bold ? 170 : 150;
+    ctx.fillStyle=S.text; ctx.font=(opts.bold?'700 ':'600 ')+sz+'px '+SANS; ctx.fillText(MODES[mode].done, W/2, y0+bh/2+sz*0.35);
   } else vals.forEach((v,i)=>{
-    const x=x0+i*(bw+gap);
-    rr(x,y0,bw,bh,22); ctx.fillStyle=boxFill; ctx.fill(); ctx.strokeStyle=S.line; ctx.lineWidth=2; ctx.stroke();
-    ctx.fillStyle=S.text; ctx.font='600 124px '+SANS; ctx.fillText(String(v).padStart(2,'0'),x+bw/2,y0+135);
-    ctx.fillStyle=mut; ctx.font='500 28px Inter, system-ui, sans-serif'; ctx.fillText(labels[i],x+bw/2,y0+185);
+    const x = M+i*(cw+gap), size = opts.bold ? 226 : 204, capH = size*0.7;
+    const base = y0 + (bh-(capH+58))/2 + capH;
+    if(!opts.nobox){ rr(x,y0,cw,bh,28); ctx.fillStyle=boxFill; ctx.fill(); ctx.strokeStyle=S.line; ctx.lineWidth=2; ctx.stroke(); }
+    ctx.fillStyle=S.text; ctx.font=(opts.bold?'700 ':'600 ')+size+'px '+SANS; ctx.fillText(String(v).padStart(2,'0'), x+cw/2, base);
+    ctx.fillStyle=mut; ctx.font=(opts.bold?'600 32px':'500 30px')+UI; ctx.fillText(labels[i], x+cw/2, base+58);
   });
 
+  // progress: from the day Rockstar announced development (4 Feb 2022) to the selected date
+  if(opts.prog){
+    const start = Date.UTC(2022,1,4), p = out ? 1 : Math.min(1, Math.max(0, (now-start)/(target-start)));
+    const bx = M, bw2 = W-2*M, by = 676, bt = 22, rem = (1-p)*100;
+    const BAR = {dark:['rgba(255,255,255,.30)','#ffffff'], light:['rgba(0,0,0,.30)','#141418'], color:['#c85fb0','#f7a35e']}[style];
+    ctx.textBaseline='alphabetic'; ctx.textAlign='left'; ctx.fillStyle=S.text; ctx.font='600 36px'+UI;
+    ctx.fillText(out ? 'Done' : (rem<10 ? rem.toFixed(2) : rem.toFixed(1))+'% remaining', bx, 654);
+    ctx.textAlign='right'; ctx.fillStyle=mut; ctx.font='500 26px'+UI;
+    ctx.fillText('Since development was announced \u00b7 4 Feb 2022', bx+bw2, 654);
+    rr(bx,by,bw2,bt,bt/2); ctx.fillStyle = (bgCanvas && style!=='light') ? 'rgba(255,255,255,.2)' : S.line; ctx.fill();
+    const fw = Math.max(bt, bw2*p), fg = ctx.createLinearGradient(bx,0,bx+fw,0); fg.addColorStop(0,BAR[0]); fg.addColorStop(1,BAR[1]);
+    rr(bx,by,fw,bt,bt/2); ctx.fillStyle=fg; ctx.fill();
+    const kx = Math.min(bx+bw2-17, bx+fw), ky = by+bt/2;
+    ctx.beginPath(); ctx.arc(kx,ky,17,0,Math.PI*2); ctx.fillStyle=BAR[1]; ctx.fill();
+    ctx.beginPath(); ctx.arc(kx,ky,6,0,Math.PI*2); ctx.fillStyle=S.bg[0]; ctx.fill();
+  }
+
+  // bottom-left: release time, then the personal line
   const fmt = o => new Intl.DateTimeFormat('en-US',Object.assign({timeZone:tz},o)).format(new Date(target));
-  const when = fmt({weekday:'short',month:'short',day:'numeric',year:'numeric'})+'  ·  '+fmt({hour:'numeric',minute:'2-digit'});
-  ctx.fillStyle=S.text; ctx.font='500 34px Inter, system-ui, sans-serif';
-  ctx.fillText(when+'  ·  '+cityName(tz)+' ('+offLabel(tz)+')',W/2,764);
-  ctx.fillStyle=mut; ctx.font='400 26px Inter, system-ui, sans-serif';
-  if(nameText){ ctx.fillStyle=S.text; ctx.font='500 34px Inter, system-ui, sans-serif'; }
-  ctx.fillText(nameText ? document.getElementById('ln').value.replace('{n}',nameText) : 'PlayStation 5  ·  Xbox Series X|S',W/2,820);
+  const when = fmt({weekday:'short',month:'short',day:'numeric',year:'numeric'})+'  \u00b7  '+fmt({hour:'numeric',minute:'2-digit'});
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle=mut; ctx.font='400 26px'+UI;
+  ctx.fillText(when+'  \u00b7  '+cityName(tz)+' ('+offLabel(tz)+')', M, 760);
+  if(nameText){ // name bright, the rest of the line quiet, same family as the date line above
+    let x = M;
+    document.getElementById('ln').value.split('{n}').forEach((t,i)=>{
+      if(i>0){ ctx.fillStyle=S.text; ctx.font='600 34px'+UI; ctx.fillText(nameText,x,816); x+=ctx.measureText(nameText).width; }
+      if(t){ ctx.fillStyle=mut; ctx.font='400 34px'+UI; ctx.fillText(t,x,816); x+=ctx.measureText(t).width; }
+    });
+  }
+  else { ctx.fillStyle=mut; ctx.font='400 26px'+UI; ctx.fillText('PlayStation 5  \u00b7  Xbox Series X|S', M, 816); }
+  ctx.textAlign='center';
 }
 
 const input = document.getElementById('tz'), list = document.getElementById('tzlist'), status = document.getElementById('status');
@@ -269,6 +307,10 @@ document.getElementById('copy').onclick = async()=>{
 
 document.getElementById('nm').addEventListener('input',e=>{ nameText=e.target.value.trim(); draw(); });
 document.getElementById('ln').addEventListener('change',draw);
+document.getElementById('opts').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return; const k=b.dataset.o; opts[k]=!opts[k];
+  b.setAttribute('aria-pressed',opts[k]); draw();
+});
 document.getElementById('modes').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return; mode=b.dataset.m;
   document.querySelectorAll('#modes button').forEach(x=>x.setAttribute('aria-pressed',x===b));
